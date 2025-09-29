@@ -14,25 +14,19 @@
 #include "stack_processing.h"
 #include "struct_stack.h"
 #include "enum_stack.h"
-#include "stack_errors.h"
+#include "stack_test.h"
+#include "stack_add.h"
 
 int main(void) {
 
     Stack_t stk1 = {};
-    StackInit(&stk1, 5);
+    Err_t err = SUCCESS_OP;
 
-    if (StackPush(&stk1, 10) == 1)
-        return 1;
+    if (StackInit(&stk1, 5, &err) == 1)
+        return -1;
 
-    if (StackPush(&stk1, 20) == 1)
-        return 1;
-
-    int tech_element = StackPop(&stk1);
-
-    if (StackDestroy(&stk1) == 1)
-        return 1;
-
-    printf("%d", tech_element);
+    if (TestStack(&stk1, &err) == -1)
+        return -1;
 
     return 0;
 
