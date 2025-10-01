@@ -8,6 +8,7 @@
 #include "struct_stack.h"
 #include "enum_stack.h"
 #include "stack_add.h"
+#define CANARY_USE 1
 
 int StackVerify(Stack_t* stk1) {
 
@@ -26,6 +27,7 @@ int StackVerify(Stack_t* stk1) {
             printf("ERROR: null pointer to data in stk1\n");
 
         }
+        #if CANARY_USE
 
         else if ((stk1 -> left_canary) == NULL) {
 
@@ -40,13 +42,6 @@ int StackVerify(Stack_t* stk1) {
 
         }
 
-        else if ((stk1 -> size_stack) < 0) {
-
-            (stk1 -> err[i]) = ACCEPTABLE_STACK_SIZE;
-            printf("ERROR: invalid stack size\n");
-
-        }
-
         else if (!CompareSuccess(*(stk1 -> left_canary), 0xFACE)) {
 
             (stk1 -> err[i]) = CANARY_LEFT;
@@ -58,6 +53,15 @@ int StackVerify(Stack_t* stk1) {
 
             (stk1 -> err[i]) = CANARY_RIGHT;
             printf("ERROR: the right canary is destroyed\n");
+
+        }
+
+        #endif
+
+        else if ((stk1 -> size_stack) < 0) {
+
+            (stk1 -> err[i]) = ACCEPTABLE_STACK_SIZE;
+            printf("ERROR: invalid stack size\n");
 
         }
 

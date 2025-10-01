@@ -8,8 +8,11 @@
 #include "stack_test.h"
 #include "stack_add.h"
 #define STACK_INFORMATION(x) StackInformation((x), __FILE__, __LINE__)
+#define CANARY_USE 1
 
 int StackInit(Stack_t* stk1, size_t capacity) {
+
+    #if CANARY_USE
 
     type_stack* new_memory = (type_stack*)calloc(capacity + TWO_CANARY, sizeof(type_stack));
 
@@ -20,6 +23,16 @@ int StackInit(Stack_t* stk1, size_t capacity) {
     (stk1 -> right_canary) = new_memory + capacity + 1;
    *(stk1 -> left_canary)  = 0xFACE;
    *(stk1 -> right_canary) = 0xFEED;
+
+    #else
+
+    type_stack* new_memory = (type_stack*)calloc(capacity, sizeof(type_stack));
+
+    assert(new_memory != NULL);
+
+    (stk1 -> data) = new_memory;
+
+    #endif
 
     (stk1 -> capacity) = capacity;
     (stk1 -> size_stack) = 0;
@@ -78,8 +91,13 @@ int StackDestroy(Stack_t* stk1) {
 
     (stk1 -> size_stack)   = NAN;
     (stk1 -> capacity)     = NAN;
+
+    #if CANARY_USE
+
     (stk1 -> left_canary)  = NULL;
     (stk1 -> right_canary) = NULL;
+
+    #endif
 
     return 0;
 
@@ -110,6 +128,9 @@ int StackExpansion(Stack_t* stk1) {
 
      size_t capacity_t        = stk1 -> capacity;
      size_t size_stack_t      = stk1 -> size_stack;
+
+     #if CANARY_USE
+
      type_stack* old_data_ptr = stk1 -> left_canary;
 
      assert(old_data_ptr != NULL);
@@ -135,7 +156,35 @@ int StackExpansion(Stack_t* stk1) {
     *(stk1 -> right_canary) = 0xFEED;
     *(stk1 -> left_canary)  = 0xFACE;
      (stk1 -> data)         = old_data_ptr + 1;
+     (stk1 -> capacity)     = capacity_t;
+
+     #else
+
+     type_stack* old_data_ptr = stk1 -> data;
+
+     assert(old_data_ptr != NULL);
+
+     type_stack* new_data_ptr = (type_stack*)realloc(old_data_ptr,
+                                (capacity_t * 2) * sizeof(type_stack));
+
+     if (new_data_ptr == NULL) {
+
+        free(old_data_ptr);
+        return 1;
+
+     }
+
+     old_data_ptr = new_data_ptr;
+
+     for (size_t index = capacity_t; index < capacity_t * 2; index++)
+         *(old_data_ptr + index) = 0;
+
+     capacity_t *= 2;
+     (stk1 -> data)     = old_data_ptr;
      (stk1 -> capacity) = capacity_t;
+
+
+     #endif
 
      if (!StackVerify(stk1))
         return 1;
