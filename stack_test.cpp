@@ -27,6 +27,19 @@ int StackVerify(Stack_t* stk1) {
 
         }
 
+        else if ((stk1 -> left_canary) == NULL) {
+
+            (stk1 -> err[i]) = NULL_POINTER_LEFT_CANARY;
+            printf("ERROR: null pointer to left_canary in stk1\n");
+
+        }
+        else if ((stk1 -> right_canary) == NULL) {
+
+            (stk1 -> err[i]) = NULL_POINTER_RIGHT_CANARY;
+            printf("ERROR: null pointer to right_canary in stk1\n");
+
+        }
+
         else if ((stk1 -> size_stack) < 0) {
 
             (stk1 -> err[i]) = ACCEPTABLE_STACK_SIZE;
@@ -34,17 +47,17 @@ int StackVerify(Stack_t* stk1) {
 
         }
 
-        else if (!CompareSuccess((stk1 -> data[0]), 0xFACE)) {
+        else if (!CompareSuccess(*(stk1 -> left_canary), 0xFACE)) {
 
             (stk1 -> err[i]) = CANARY_LEFT;
-            printf("ERROR: the stack is damaged\n");
+            printf("ERROR: the left canary is destroyed\n");
 
         }
 
-        else if (!CompareSuccess((stk1 -> data[(stk1 -> capacity) + 1]), 0xFEED)) {
+        else if (!CompareSuccess(*(stk1 -> right_canary), 0xFEED)) {
 
             (stk1 -> err[i]) = CANARY_RIGHT;
-            printf("ERROR: the stack is damaged\n");
+            printf("ERROR: the right canary is destroyed\n");
 
         }
 
@@ -63,69 +76,55 @@ int StackVerify(Stack_t* stk1) {
 
 }
 
-void StackInformation(Stack_t* stk1, const char* file, int line) {
+int StackInformation(Stack_t* stk1, const char* file, int line) {
 
-    Stack_parametrs stack_info = GetStackParametrs(stk1);
-    Stack_parametrs* stack_info_p = &stack_info;
+    Stack_parametrs stack_info = {};
+
+    if (GetStackParametrs(stk1, &stack_info) == 1)
+        return 1;
 
     fprintf(stderr, "StackInformation called from %s: %d\n", file, line);
-    printf("Stack[%p]\n", (stack_info_p -> stack_adr_p));
+    printf("Stack[%p]\n", (stack_info.stack_adr_p));
     printf("{                   \n");
-    printf("    size = %zu      \n", (stack_info_p -> size_stack_p));
-    printf("    capacity = %zu  \n", (stack_info_p -> capacity_p));
-    printf("    data [%p]       \n", (stack_info_p -> data_adr_p));
+    printf("    size = %zu      \n", (stack_info.size_stack_p));
+    printf("    capacity = %zu  \n", (stack_info.capacity_p));
+    printf("    data [%p]       \n", (stack_info.data_adr_p));
     printf("    {               \n");
-    printf("         [%d] = %g\n", 0, (stack_info_p -> data_adr_p[0]));
-    for (size_t index = 1; index < (stack_info_p -> size_stack_p) + 1; index++) {
-        printf("        *[%lld] = %g\n", index, stack_info_p -> data_adr_p[index]);
+    for (size_t index = 0; index < (stack_info.size_stack_p); index++) {
+        printf("        *[%lld] = %g\n", index, stack_info.data_adr_p[index]);
     }
-    for (size_t index = (stack_info_p -> size_stack_p) + 1;
-                    index < (stack_info_p -> capacity_p) + TWO_CANARY; index++) {
-        printf("         [%lld] = %g\n", index, stack_info_p -> data_adr_p[index]);
+    for (size_t index = (stack_info.size_stack_p);
+                    index < (stack_info.capacity_p); index++) {
+        printf("         [%lld] = %g\n", index, stack_info.data_adr_p[index]);
     }
     printf("    }             \n");
     printf("}\n");
 
-}
-
-
-int AllVerify(Err_t* err) {
-
-    switch(*err) {
-        case NULL_POINTER:     printf("ERROR: null pointer on element\n");
-                               return 1;
-
-        case ERR_FILE_OPEN:    printf("ERROR: file open incorrect\n");
-                               return 1;
-
-        case INVALID_VALUES:   printf("ERROR: values incorrect\n");
-                               return 1;
-
-        case ERR_MEMORY_ALLOC: printf("ERROR: memory allocation failure\n");
-                               return 1;
-
-        case SUCCESS_OP:       return 0;
-
-        default:               assert(0);
-    }
+    return 0;
 
 }
 
-Stack_parametrs GetStackParametrs(Stack_t* stk1) {
 
-     Stack_parametrs stack_info  = {
+int GetStackParametrs(Stack_t* stk1, Stack_parametrs* stack_info) {
 
-                    stack_info.stack_adr_p  = stk1,
-                    stack_info.size_stack_p = (stk1 -> size_stack),
-                    stack_info.capacity_p   = (stk1 -> capacity),
-                    stack_info.data_adr_p   = (stk1 -> data)
+    assert(stack_info != NULL);
 
-                    };
+    if (!StackVerify(stk1))
+        return 1;
 
-     return stack_info;
+     (stack_info -> stack_adr_p)  = stk1;
+     (stack_info -> size_stack_p) = (stk1 -> size_stack);
+     (stack_info -> capacity_p)   = (stk1 -> capacity);
+     (stack_info -> data_adr_p)   = (stk1 -> data);
+
+     return 0;
+
 }
 
-int TestStack(Stack_t* stk1, Err_t* err) {
+int TestStack(Stack_t* stk1) {
+
+      if (!StackVerify(stk1))
+        return 1;
 
       char* buff = 0;
       size_t size_buff = SIZE_BUFF;
@@ -142,7 +141,7 @@ int TestStack(Stack_t* stk1, Err_t* err) {
 
                 str = command;
 
-                if (ChangeStack(str, element, stk1, err) == -1)
+                if (ChangeStack(str, element, stk1) == -1)
 
                     return -1;
 
@@ -151,7 +150,7 @@ int TestStack(Stack_t* stk1, Err_t* err) {
             else if (sscanf(buff, "%s", command) == 1) {
 
                 str = command;
-                int result = DoCommand(str, stk1, err);
+                int result = DoCommand(str, stk1);
 
                 if (result == -1)
 
@@ -168,11 +167,16 @@ int TestStack(Stack_t* stk1, Err_t* err) {
 }
 
 int ChangeStack(const char* str, type_stack element,
-                                      Stack_t* stk1, Err_t* err) {
+                            Stack_t* stk1) {
+
+      assert(str != NULL);
+
+      if (!StackVerify(stk1))
+        return 1;
 
       if (strcmp(str, "PUSH") == 0) {
 
-            if (StackPush(stk1, element, err) == 1)
+            if (StackPush(stk1, element) == 1)
                 return -1;
 
             return 0;
@@ -183,15 +187,25 @@ int ChangeStack(const char* str, type_stack element,
 
 }
 
-int DoCommand(const char* str,
-                          Stack_t* stk1, Err_t* err) {
+int DoCommand(const char* str, Stack_t* stk1) {
+
+     assert(str != NULL);
+
+     if (!StackVerify(stk1))
+        return 1;
+
+     type_stack last_el1 = 0;
+     type_stack last_el2 = 0;
 
      if (strcmp(str, "ADD") == 0) {
 
-        type_stack last_el1 = StackPop(stk1);
-        type_stack last_el2 = StackPop(stk1);
+        if (StackPop(stk1, &last_el1) == 1)
+            return -1;
 
-        if (StackPush(stk1, last_el1 + last_el2, err) == 1)
+        if (StackPop(stk1, &last_el2) == 1)
+            return -1;
+
+        if (StackPush(stk1, last_el1 + last_el2) == 1)
             return -1;
 
         return 0;
@@ -200,59 +214,79 @@ int DoCommand(const char* str,
 
      else if (strcmp(str, "SUB") == 0) {
 
-        type_stack last_el1 = StackPop(stk1);
-        type_stack last_el2 = StackPop(stk1);
+        if (StackPop(stk1, &last_el1) == 1)
+            return -1;
 
-        if (StackPush(stk1, last_el2 - last_el1, err) == 1)
+        if (StackPop(stk1, &last_el2) == 1)
+            return -1;
+
+        if (StackPush(stk1, last_el2 - last_el1) == 1)
             return -1;
 
         return 0;
 
      }
+
      else if (strcmp(str, "MUL") == 0) {
 
-        type_stack last_el1 = StackPop(stk1);
-        type_stack last_el2 = StackPop(stk1);
+        if (StackPop(stk1, &last_el1) == 1)
+            return -1;
 
-        if (StackPush(stk1, last_el1 * last_el2, err) == 1)
+        if (StackPop(stk1, &last_el2) == 1)
+            return -1;
+
+        if (StackPush(stk1, last_el1 * last_el2) == 1)
             return -1;
 
         return 0;
 
      }
+
      else if (strcmp(str, "SQRT") == 0) {
 
-        type_stack last_el      = StackPop(stk1);
-        type_stack sqrt_last_el = sqrt(last_el * 1e6) / 1e3;
+        if (StackPop(stk1, &last_el1) == 1)
+            return -1;
 
-        if (StackPush(stk1, sqrt_last_el, err) == 1)
+        type_stack sqrt_last_el = sqrt(last_el1 * 1e6) / 1e3;
+
+        if (StackPush(stk1, sqrt_last_el) == 1)
             return -1;
 
         return 0;
 
 
      }
+
      else if (strcmp(str, "DIV") == 0) {
 
-        type_stack last_el1 = StackPop(stk1);
-        type_stack last_el2 = StackPop(stk1);
+        if (StackPop(stk1, &last_el1) == 1)
+            return -1;
 
-        if ((last_el2 != 0) && (StackPush(stk1, last_el1 / last_el2, err) == 1))
+        if (StackPop(stk1, &last_el2) == 1)
+            return -1;
+
+        if ((last_el2 != 0) && (StackPush(stk1, last_el1 / last_el2) == 1))
             return -1;
 
         return 0;
 
      }
+
      else if (strcmp(str, "OUT") == 0) {
 
-        printf("%f\n", StackPop(stk1));
+        if (StackPop(stk1, &last_el1) == 1)
+            return -1;
+
+        printf("%f\n", last_el1);
         return 0;
 
      }
+
      if (strcmp(str, "HLT") == 0) {
 
         if (StackDestroy(stk1) == 1)
             return -1;
+
         return 1;
 
      }

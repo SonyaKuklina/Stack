@@ -10,6 +10,8 @@ struct Stack_t {
     size_t size_stack;
     size_t capacity;
     StackErr_t err[count_err_stack];
+    type_stack* left_canary;//адрес левой канарейки
+    type_stack* right_canary; //адрес правой канарейки
 
     };
 

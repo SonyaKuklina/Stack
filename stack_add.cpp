@@ -22,9 +22,11 @@ bool CompareSuccess(type_stack n1, type_stack n2) {
 
 size_t Getline(char** buff ,size_t size_buff) {
 
+    assert(buff != NULL);
+
     *buff = (char*)calloc(size_buff, sizeof(char));
-    if (*buff == NULL)
-        return NULL;
+
+    assert(*buff != NULL);
 
     int c = getchar();
     size_t index = 0;
@@ -36,22 +38,27 @@ size_t Getline(char** buff ,size_t size_buff) {
                 char* add_buff = (char*)realloc(buff, 2 * SIZE_BUFF * sizeof(char));
 
                 if (add_buff == NULL) {
+
                     free(*buff);
                     return NULL;
+
                 }
 
                 *buff = add_buff;
                 size_buff = SIZE_BUFF;
 
            }
+
            *((*buff) + index) = c;
            size_buff--;
+
            c = getchar();
            index++;
 
     }
 
     *((*buff) + index) = '\0';
+
     return index;
 
 }

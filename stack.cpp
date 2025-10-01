@@ -20,12 +20,11 @@
 int main(void) {
 
     Stack_t stk1 = {};
-    Err_t err = SUCCESS_OP;
 
-    if (StackInit(&stk1, 5, &err) == 1)
+    if (StackInit(&stk1, 5) == 1)
         return -1;
 
-    if (TestStack(&stk1, &err) == -1)
+    if (TestStack(&stk1) == -1)
         return -1;
 
     return 0;
